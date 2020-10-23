@@ -56,6 +56,8 @@ export class HttpServer {
 
     this.setupBasePathRewrite(this.server, config);
 
+    // this.registeredRouters 定义所有可用Route
+    // console.log(this.registeredRouters);
     for (const router of this.registeredRouters) {
       for (const route of router.getRoutes()) {
         this.server.route({

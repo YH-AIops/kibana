@@ -35,8 +35,10 @@ import { EventsProvider } from '../events';
 import { PersistedState } from './persisted_state';
 import { uiModules } from '../modules';
 
+// 获取kibana模块
 const module = uiModules.get('kibana');
 
+// 以工厂模式的形式封装PersistedState
 module.factory('PersistedState', ($injector) => {
   const Private = $injector.get('Private');
   const Events = Private(EventsProvider);

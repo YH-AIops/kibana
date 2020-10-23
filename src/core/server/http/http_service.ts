@@ -55,7 +55,7 @@ export class HttpService implements CoreService<HttpServerInfo> {
         );
       }
     });
-
+    // 负责web服务器的运行
     const config = await this.config$.pipe(first()).toPromise();
 
     // If a redirect port is specified, we start an HTTP server at this port and

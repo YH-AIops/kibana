@@ -19,6 +19,7 @@
 
 import { VisRequestHandlersRegistryProvider } from '../../registry/vis_request_handlers';
 
+// 提供导出内容
 const noneRequestHandlerProvider = function () {
   return {
     name: 'none',
@@ -30,6 +31,7 @@ const noneRequestHandlerProvider = function () {
   };
 };
 
+// 注册模块noneRequestHandlerProvider
 VisRequestHandlersRegistryProvider.register(noneRequestHandlerProvider);
 
 export { noneRequestHandlerProvider };

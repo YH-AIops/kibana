@@ -44,6 +44,7 @@ export class Server {
   }
 
   public async start() {
+    // 加载插件，并开始web 服务器 http.start();
     this.log.debug('starting server');
 
     // We shouldn't start http service in two cases:

@@ -87,6 +87,8 @@ export default function (kibana) {
       createDataCluster(server);
       createAdminCluster(server);
 
+      // console.log("--------->server");
+      // console.log(server.plugins.elasticsearch);
       createProxy(server);
 
       // Set up the health check service and start it.

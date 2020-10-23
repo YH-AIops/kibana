@@ -57,6 +57,13 @@ async function getUnusedConfigKeys(
   const inputKeys = getFlattenedKeys(settings);
   const appliedKeys = getFlattenedKeys(configValues);
 
+  // kibanao配置参数和默认参数
+  // console.log(inputKeys);
+  // 添加SkyWalking跳转地址
+  appliedKeys.push('skyWalking_path');
+  // 系统所注册的参数
+  // console.log(appliedKeys);
+
   if (inputKeys.includes('env')) {
     // env is a special case key, see https://github.com/elastic/kibana/blob/848bf17b/src/legacy/server/config/config.js#L74
     // where it is deleted from the settings before being injected into the schema via context and
@@ -78,6 +85,7 @@ export default async function (kbnServer, server, config) {
     return kbnServer.config;
   });
 
+  // 检查未注册的配置参数(kibana.yml)
   const unusedKeys = await getUnusedConfigKeys(
     kbnServer.core.handledConfigPaths,
     kbnServer.plugins,

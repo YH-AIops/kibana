@@ -32,7 +32,9 @@ import { VisualizeConstants } from '../visualize_constants';
 
 import { i18n } from '@kbn/i18n';
 
+// 注入react 使用的ngReact组件
 const app = uiModules.get('app/visualize', ['ngRoute', 'react']);
+// ngReact指令注册
 app.directive('visualizeListingTable', reactDirective => reactDirective(wrapInI18nContext(VisualizeListingTable)));
 app.directive('newVisModal', reactDirective => reactDirective(wrapInI18nContext(NewVisModal)));
 

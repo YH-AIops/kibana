@@ -171,7 +171,7 @@ class TutorialUi extends React.Component {
 
     if (esHitsCheckConfig) {
       const statusCheckState = await this.fetchEsHitsStatus(esHitsCheckConfig);
-
+      // console.log(statusCheckState);
       this.setState((prevState) => ({
         statusCheckStates: {
           ...prevState.statusCheckStates,

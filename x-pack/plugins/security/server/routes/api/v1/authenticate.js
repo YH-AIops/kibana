@@ -6,6 +6,8 @@
 
 import Boom from 'boom';
 import Joi from 'joi';
+import { readFileSync } from 'fs';
+import { safeLoad } from 'js-yaml';
 import { wrapError } from '../../../lib/errors';
 import { canRedirectRequest } from '../../../lib/can_redirect_request';
 
@@ -130,6 +132,10 @@ export function initAuthenticateApi(server) {
     method: 'GET',
     path: '/api/security/v1/me',
     handler(request) {
+      //  todo 由于前端跳转需要动态配置skywalking域名,
+      // 所以在此方法一同返回跳转域名
+      const yaml = safeLoad(readFileSync('./config/kibana.yml', 'utf8'));
+      request.auth.credentials.skyWalking_path = yaml.skyWalking_path;
       return request.auth.credentials;
     }
   });

@@ -60,6 +60,7 @@ export default function (kibana) {
     uiExports: {
       hacks: ['plugins/kibana/dev_tools/hacks/hide_empty_tools'],
       fieldFormats: ['plugins/kibana/field_formats/register'],
+      // 默认定义了三个保存实体对象
       savedObjectTypes: [
         'plugins/kibana/visualize/saved_visualizations/saved_visualization_register',
         'plugins/kibana/discover/saved_searches/saved_search_register',

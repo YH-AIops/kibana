@@ -39,7 +39,11 @@ DocViewsRegistryProvider.register(function () {
         onAddColumn: '=',
         onRemoveColumn: '=',
       },
-      controller: function ($scope) {
+      controller: function ($scope, $route, ShieldUser) {
+        // todo 获取
+        // $scope.user = ShieldUser.getCurrent();
+        // console.log($scope.user.skyWalking_path);
+        // console.log($scope);
         $scope.mapping = $scope.indexPattern.fields.byName;
         $scope.flattened = $scope.indexPattern.flattenHit($scope.hit);
         $scope.formatted = $scope.indexPattern.formatHit($scope.hit);
@@ -68,6 +72,27 @@ DocViewsRegistryProvider.register(function () {
           const value = $scope.flattened[field];
           return Array.isArray(value) && typeof value[0] === 'object';
         };
+        // todo table展示的数据
+        // console.log($scope);
+
+        // 判断traceId 则显示跳转
+        $scope.showLink = function (row, field) {
+          const str = /^(\d+\.)+\d+$/;
+          return field === 'traceId' ? str.test(getTraceId()) : false;
+        };
+        // 跳转到SkyWalkinng追踪页面
+        $scope.jump = function () {
+          const project = $scope.hit._source.project;
+          const path = window.localStorage.getItem('skyWalking_path');
+          const url = path + 'trace?project=' + project + '&traceId=' + getTraceId();
+          window.open(url,'_blank');
+        }
+
+        function getTraceId() {
+          let traceId = $scope.hit._source.traceId;
+          traceId = traceId.substr(4,traceId.length);
+          return traceId;
+        }
       }
     }
   };

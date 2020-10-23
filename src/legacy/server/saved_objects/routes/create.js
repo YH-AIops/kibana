@@ -21,11 +21,14 @@ import Joi from 'joi';
 
 export const createCreateRoute = prereqs => {
   return {
+    // 参数路由 type必填,id选填
     path: '/api/saved_objects/{type}/{id?}',
     method: 'POST',
     options: {
+      // 在handler执行前，执行函数组
       pre: [prereqs.getSavedObjectsClient],
       validate: {
+        // 校验
         query: Joi.object()
           .keys({
             overwrite: Joi.boolean().default(false),
@@ -33,10 +36,13 @@ export const createCreateRoute = prereqs => {
           .default(),
         params: Joi.object()
           .keys({
+            // type 必填(字符串类型)
             type: Joi.string().required(),
+            // id 可填
             id: Joi.string(),
           })
           .required(),
+          //Joi.object中为加载项,post传递的对象
         payload: Joi.object({
           attributes: Joi.object().required(),
           migrationVersion: Joi.object().optional(),
@@ -51,6 +57,8 @@ export const createCreateRoute = prereqs => {
         }).required(),
       },
       handler(request) {
+        // const {a,b} = object 是ES6解构赋值语法
+        // 相当于 const a = object.a;const b = object.b;
         const { savedObjectsClient } = request.pre;
         const { type, id } = request.params;
         const { overwrite } = request.query;

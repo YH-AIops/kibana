@@ -31,7 +31,7 @@ import { getRequestInspectorStats, getResponseInspectorStats } from '../courier/
 import { getLimitedSearchResultsMessage } from './doc_table_strings';
 
 uiModules.get('kibana')
-  .directive('docTable', function (config, Notifier, getAppState, pagerFactory, $filter, courier, i18n) {
+  .directive('docTable', function (config, ShieldUser, Notifier, getAppState, pagerFactory, $filter, courier, i18n) {
     return {
       restrict: 'E',
       template: html,
@@ -51,8 +51,29 @@ uiModules.get('kibana')
         onRemoveColumn: '=?',
         inspectorAdapters: '=?',
       },
-      link: function ($scope, $el) {
+      // controller: function($scope, $element) {
+      //   setTimeout(function (){
+      //     console.log("$scope.hits");
+      //     console.log($scope);
+      //     console.log($scope.hits);
+      //     let a = $scope;
+      //     console.log(a);
+      //   },500);
+      // },
+      link: function ($scope, $route, $el) {
         const notify = new Notifier();
+        // todo doc_table表格总数据
+        // console.log("doc_table");
+        // console.log($scope);
+        $scope.user = ShieldUser.getCurrent();
+        setTimeout(function (){
+          window.localStorage.setItem('skyWalking_path', $scope.user.skyWalking_path);
+        },5000);
+
+        $scope.$watch('hits',function(newValue,oldValue) {
+          console.log("-------->监听");
+          console.log(newValue);
+        });
 
         $scope.$watch('minimumVisibleRows', (minimumVisibleRows) => {
           $scope.limit = Math.max(minimumVisibleRows || 50, $scope.limit || 50);

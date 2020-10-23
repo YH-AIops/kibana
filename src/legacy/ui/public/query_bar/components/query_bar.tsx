@@ -341,6 +341,10 @@ export class QueryBarUI extends Component<Props, State> {
   };
 
   public onClickSubmitButton = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // console.log("查询按钮");
+    // console.log(event);
+    console.log("-------->state",this.state);
+    
     this.onSubmit(() => event.preventDefault());
   };
 
@@ -500,6 +504,9 @@ export class QueryBarUI extends Component<Props, State> {
         to: this.state.dateRangeTo,
       },
     });
+    // 查询参数
+    // console.log(this.props);
+    // console.log(this.state.query.query);
     this.setState({ isSuggestionsVisible: false });
   };
 
@@ -640,6 +647,7 @@ export class QueryBarUI extends Component<Props, State> {
   }
 
   private renderUpdateButton() {
+    // todo 日志查询按钮
     const button = (
       <EuiSuperUpdateButton
         needsUpdate={this.isDirty()}

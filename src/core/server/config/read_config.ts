@@ -54,6 +54,9 @@ export const getConfigFromFiles = (configFiles: ReadonlyArray<string>) => {
 
   for (const configFile of configFiles) {
     const yaml = readYaml(configFile);
+    // 读取配置文件
+    // console.log("-------->yaml");
+    // console.log(yaml);
     if (yaml !== null) {
       mergedYaml = merge(mergedYaml, yaml);
     }

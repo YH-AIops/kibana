@@ -22,6 +22,7 @@ import Joi from 'joi';
 export function createProxy(server) {
   const { callWithRequest } = server.plugins.elasticsearch.getCluster('data');
 
+  // node服务接口
   server.route({
     method: 'POST',
     path: '/elasticsearch/_msearch',

@@ -20,6 +20,7 @@
 import { addSearchStrategy } from './search_strategy_registry';
 import { isDefaultTypeIndexPattern } from './is_default_type_index_pattern';
 import { SearchError } from './search_error';
+import buildBody from './build_body';
 
 function getAllFetchParams(searchRequests, Promise) {
   return Promise.map(searchRequests, (searchRequest) => {
@@ -62,6 +63,7 @@ export const defaultSearchStrategy = {
     // e.g. body, filters, index pattern, query.
     const allFetchParams = await getAllFetchParams(searchRequests, Promise);
 
+    // 组装请求的body参数
     // Serialize the fetch params into a format suitable for the body of an ES query.
     const {
       serializedFetchParams,
@@ -78,7 +80,7 @@ export const defaultSearchStrategy = {
       rest_total_hits_as_int: true,
       // If we want to include frozen indexes we need to specify ignore_throttled: false
       ignore_throttled: !includeFrozen,
-      body: serializedFetchParams,
+      body: buildBody(serializedFetchParams),
     };
 
     if (maxConcurrentShardRequests !== 0) {
@@ -86,12 +88,34 @@ export const defaultSearchStrategy = {
     }
 
     const searching = es.msearch(msearchParams);
-
+    // searching.then(({ responses }) => {
+    //   console.log("responses");
+    //   const d = responses[0].hits.hits;
+    //   console.log(d);
+    //   const searching1 = es.msearch(msearchParams);
+    //   searching1.then(res =>{
+    //     console.log("res");
+    //     console.log(res);
+    //     console.log(d.push(res.responses[0].hits.hits[0]));
+    //     console.log(d);
+    //   })
+    // });
     return {
       // Munge data into shape expected by consumer.
       searching: new Promise((resolve, reject) => {
         // Unwrap the responses object returned by the ES client.
         searching.then(({ responses }) => {
+          // console.log("==============");
+          // const d = responses[0].hits.hits;
+          // const searching1 = es.msearch(msearchParams);
+          // searching1.then(res =>{
+          //   d.push(res.responses[0].hits.hits[0]);
+          //   resolve(responses);
+          // })
+          // responses[0].hits.hits = d;
+          // console.log(d.length);
+          // console.log(responses[0].hits.hits.length);
+          // responses[0].hits.hits.shift();
           resolve(responses);
         }).catch(error => {
           // Format ES client error as a SearchError.

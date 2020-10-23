@@ -28,6 +28,7 @@ const module = uiModules.get('discover/saved_searches', [
 ]);
 
 module.factory('SavedSearch', function (Private, i18n) {
+  // SavedSearch对象
   const SavedObject = Private(SavedObjectProvider);
   createLegacyClass(SavedSearch).inherits(SavedObject);
   function SavedSearch(id) {

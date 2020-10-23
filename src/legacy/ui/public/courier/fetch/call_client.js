@@ -64,6 +64,7 @@ export function CallClientProvider(Private, Promise, es, config) {
     const respondToSearchRequests = (responsesInOriginalRequestOrder = []) => {
       // We map over searchRequestsAndStatuses because if we were originally provided an ABORTED
       // request then we'll return that value.
+      console.log("test-----");
       return Promise.map(searchRequestsAndStatuses, function (searchRequest, searchRequestIndex) {
         if (searchRequest.aborted) {
           return ABORTED;
@@ -133,6 +134,22 @@ export function CallClientProvider(Private, Promise, es, config) {
 
     const searchStrategiesWithRequests = assignSearchRequestsToSearchStrategies(requestsToFetch);
 
+    const a = {
+      fields:{
+        '@timestamp':["2020-10-22T07:07:22.483Z"],
+        'process_timestamp':["2020-10-22T07:07:22.566Z"]
+      },
+      sort:[1603350599484],
+      _id:"MpUkT3UBfnllbGBcl033",
+      _index:"logstash-itservice-010-it-service-gateway-2020.10.22",
+      _score: null,
+      _source:{
+        '@timestamp': "2020-10-22T07:09:59.483Z",
+        'project': "itservice-010"
+      },
+      _type:"_doc",
+      _version:1
+    };
     // We're going to create a new async context here, so that the logic within it can execute
     // asynchronously after we've returned a reference to defer.promise.
     Promise.resolve().then(async () => {
@@ -179,15 +196,87 @@ export function CallClientProvider(Private, Promise, es, config) {
         // order than the original searchRequests. So we'll put them back in order so that we can
         // use the order to associate each response with the original request.
         const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
+        console.log(segregatedResponses);
         segregatedResponses.forEach((responses, strategyIndex) => {
           responses.forEach((response, responseIndex) => {
             const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
             const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
+            // response.hits.hits.push(a)
+            console.log("-------第一次请求");
+            console.log("=========>",response.hits.hits);
             responsesInOriginalRequestOrder[requestIndex] = response;
           });
         });
 
-        await respondToSearchRequests(responsesInOriginalRequestOrder);
+        const respond = await respondToSearchRequests(responsesInOriginalRequestOrder);
+        console.log("-------->respond", respond);
+        Promise.resolve().then(async () => {
+          const searchStrategyWithSearchRequests = searchStrategiesWithRequests[0];
+          const { searchStrategy, searchRequests } = searchStrategyWithSearchRequests;
+      
+          const {
+            searching,
+            abort,
+            failedSearchRequests,
+          } = await searchStrategy.search({ searchRequests, es, Promise, serializeFetchParams, includeFrozen, maxConcurrentShardRequests });
+      
+          searchRequests.forEach(searchRequest => {
+            if (failedSearchRequests.includes(searchRequest)) {
+              return;
+            }
+      
+            activeSearchRequests.push(searchRequest);
+          });
+          // abortableSearches = [];
+          abortableSearches.shift();
+          abortableSearches.push({
+            searching,
+            abort,
+            requestsCount: searchRequests.length,
+          });
+      
+      try {
+          // The request was aborted while we were doing the above logic.
+          if (areAllSearchRequestsAborted) {
+            return;
+          }
+      
+          const segregatedResponses = await Promise.all(abortableSearches.map(async ({ searching, requestsCount }) => {
+            return searching.catch((e) => {
+              // Duplicate errors so that they correspond to the original requests.
+              return new Array(requestsCount).fill({ error: e });
+            });
+          }));
+      
+          // Assigning searchRequests to strategies means that the responses come back in a different
+          // order than the original searchRequests. So we'll put them back in order so that we can
+          // use the order to associate each response with the original request.
+          const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
+          console.log(segregatedResponses);
+          segregatedResponses.forEach((responses, strategyIndex) => {
+            responses.forEach((response, responseIndex) => {
+              const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
+              const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
+              response.hits.hits.push(a)
+              console.log("-------第二次请求");
+              console.log("=========>",response.hits.hits);
+              responsesInOriginalRequestOrder[requestIndex] = response;
+            });
+          });
+      
+          const respond = await respondToSearchRequests(responsesInOriginalRequestOrder);
+          console.log("--------->respond",respond);
+        } catch(error) {
+          if (errorAllowExplicitIndex.test(error)) {
+            return errorAllowExplicitIndex.takeover();
+          }
+      
+          defer.reject(error);
+        }
+          
+          
+        });
+    
       } catch(error) {
         if (errorAllowExplicitIndex.test(error)) {
           return errorAllowExplicitIndex.takeover();
