@@ -62,18 +62,16 @@ uiModules.get('kibana')
       // },
       link: function ($scope, $route, $el) {
         const notify = new Notifier();
+        $scope.user = ShieldUser.getCurrent();
+        window.localStorage.setItem('skyWalking_path', $scope.user.skyWalking_path);
         // todo doc_table表格总数据
         // console.log("doc_table");
         // console.log($scope);
-        $scope.user = ShieldUser.getCurrent();
-        setTimeout(function (){
-          window.localStorage.setItem('skyWalking_path', $scope.user.skyWalking_path);
-        },5000);
-
-        $scope.$watch('hits',function(newValue,oldValue) {
-          console.log("-------->监听");
-          console.log(newValue);
-        });
+        
+        // $scope.$watch('hits',function(newValue,oldValue) {
+        //   console.log("-------->监听");
+        //   console.log(newValue);
+        // });
 
         $scope.$watch('minimumVisibleRows', (minimumVisibleRows) => {
           $scope.limit = Math.max(minimumVisibleRows || 50, $scope.limit || 50);

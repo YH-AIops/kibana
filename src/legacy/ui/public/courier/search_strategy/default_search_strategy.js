@@ -26,11 +26,27 @@ function getAllFetchParams(searchRequests, Promise) {
   return Promise.map(searchRequests, (searchRequest) => {
     return Promise.try(searchRequest.getFetchParams, void 0, searchRequest)
       .then((fetchParams) => {
+        decide(fetchParams);
         return (searchRequest.fetchParams = fetchParams);
       })
       .then(value => ({ resolved: value }))
       .catch(error => ({ rejected: error }));
   });
+}
+
+// todo 判定是否再次请求
+function decide(fetchParams) {
+  const hostName = document.location.hostname;
+  console.log(hostName);
+  if (hostName.indexOf('kibana-prod') !== -1 || hostName.indexOf('localhost') !== -1) {
+    const info = JSON.stringify(fetchParams.filters[0].range);
+    const data = JSON.parse(info.substring(14,info.length - 1));
+    const lte = new Date(data.lte).getTime();
+    const gte = new Date(data.gte).getTime();
+    const day = parseInt((lte - gte) / 1000 / (24 * 60 * 60));
+    day <= 30 ? window.localStorage.setItem("is_query", true)
+    : window.localStorage.removeItem("is_query");
+  }
 }
 
 async function serializeAllFetchParams(fetchParams, searchRequests, serializeFetchParams) {

@@ -24,6 +24,7 @@ import { MergeDuplicatesRequestProvider } from './merge_duplicate_requests';
 import { RequestStatus } from './req_status';
 import { SerializeFetchParamsProvider } from './request/serialize_fetch_params';
 import { i18n } from '@kbn/i18n';
+import axios from 'axios';
 
 export function CallClientProvider(Private, Promise, es, config) {
   const errorAllowExplicitIndex = Private(ErrorAllowExplicitIndexProvider);
@@ -64,7 +65,6 @@ export function CallClientProvider(Private, Promise, es, config) {
     const respondToSearchRequests = (responsesInOriginalRequestOrder = []) => {
       // We map over searchRequestsAndStatuses because if we were originally provided an ABORTED
       // request then we'll return that value.
-      console.log("test-----");
       return Promise.map(searchRequestsAndStatuses, function (searchRequest, searchRequestIndex) {
         if (searchRequest.aborted) {
           return ABORTED;
@@ -133,121 +133,50 @@ export function CallClientProvider(Private, Promise, es, config) {
     });
 
     const searchStrategiesWithRequests = assignSearchRequestsToSearchStrategies(requestsToFetch);
-
-    const a = {
-      fields:{
-        '@timestamp':["2020-10-22T07:07:22.483Z"],
-        'process_timestamp':["2020-10-22T07:07:22.566Z"]
-      },
-      sort:[1603350599484],
-      _id:"MpUkT3UBfnllbGBcl033",
-      _index:"logstash-itservice-010-it-service-gateway-2020.10.22",
-      _score: null,
-      _source:{
-        '@timestamp': "2020-10-22T07:09:59.483Z",
-        'project': "itservice-010"
-      },
-      _type:"_doc",
-      _version:1
-    };
-    // We're going to create a new async context here, so that the logic within it can execute
-    // asynchronously after we've returned a reference to defer.promise.
-    Promise.resolve().then(async () => {
-      // Execute each request using its search strategy.
-      for (let i = 0; i < searchStrategiesWithRequests.length; i++) {
-        const searchStrategyWithSearchRequests = searchStrategiesWithRequests[i];
-        const { searchStrategy, searchRequests } = searchStrategyWithSearchRequests;
-        const {
-          searching,
-          abort,
-          failedSearchRequests,
-        } = await searchStrategy.search({ searchRequests, es, Promise, serializeFetchParams, includeFrozen, maxConcurrentShardRequests });
-
-        // Collect searchRequests which have successfully been sent.
-        searchRequests.forEach(searchRequest => {
-          if (failedSearchRequests.includes(searchRequest)) {
-            return;
-          }
-
-          activeSearchRequests.push(searchRequest);
-        });
-
-        abortableSearches.push({
-          searching,
-          abort,
-          requestsCount: searchRequests.length,
-        });
-      }
-
-      try {
-        // The request was aborted while we were doing the above logic.
-        if (areAllSearchRequestsAborted) {
-          return;
-        }
-
-        const segregatedResponses = await Promise.all(abortableSearches.map(async ({ searching, requestsCount }) => {
-          return searching.catch((e) => {
-            // Duplicate errors so that they correspond to the original requests.
-            return new Array(requestsCount).fill({ error: e });
-          });
-        }));
-
-        // Assigning searchRequests to strategies means that the responses come back in a different
-        // order than the original searchRequests. So we'll put them back in order so that we can
-        // use the order to associate each response with the original request.
-        const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
-        console.log(segregatedResponses);
-        segregatedResponses.forEach((responses, strategyIndex) => {
-          responses.forEach((response, responseIndex) => {
-            const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
-            const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
-            // response.hits.hits.push(a)
-            console.log("-------第一次请求");
-            console.log("=========>",response.hits.hits);
-            responsesInOriginalRequestOrder[requestIndex] = response;
-          });
-        });
-
-        const respond = await respondToSearchRequests(responsesInOriginalRequestOrder);
-        console.log("-------->respond", respond);
-        Promise.resolve().then(async () => {
-          const searchStrategyWithSearchRequests = searchStrategiesWithRequests[0];
+    const isQuery = window.localStorage.getItem("is_query");
+    const isFirst = window.localStorage.getItem("is_first");
+    if (isQuery && isFirst) {
+      query();
+      Promise.resolve().then(async () => {
+        // Execute each request using its search strategy.
+        for (let i = 0; i < searchStrategiesWithRequests.length; i++) {
+          const searchStrategyWithSearchRequests = searchStrategiesWithRequests[i];
           const { searchStrategy, searchRequests } = searchStrategyWithSearchRequests;
-      
           const {
             searching,
             abort,
             failedSearchRequests,
           } = await searchStrategy.search({ searchRequests, es, Promise, serializeFetchParams, includeFrozen, maxConcurrentShardRequests });
-      
+    
+          // Collect searchRequests which have successfully been sent.
           searchRequests.forEach(searchRequest => {
             if (failedSearchRequests.includes(searchRequest)) {
               return;
             }
-      
+    
             activeSearchRequests.push(searchRequest);
           });
-          // abortableSearches = [];
-          abortableSearches.shift();
+    
           abortableSearches.push({
             searching,
             abort,
             requestsCount: searchRequests.length,
           });
-      
-      try {
+        }
+    
+        try {
           // The request was aborted while we were doing the above logic.
           if (areAllSearchRequestsAborted) {
             return;
           }
-      
+    
           const segregatedResponses = await Promise.all(abortableSearches.map(async ({ searching, requestsCount }) => {
             return searching.catch((e) => {
               // Duplicate errors so that they correspond to the original requests.
               return new Array(requestsCount).fill({ error: e });
             });
           }));
-      
+    
           // Assigning searchRequests to strategies means that the responses come back in a different
           // order than the original searchRequests. So we'll put them back in order so that we can
           // use the order to associate each response with the original request.
@@ -257,34 +186,90 @@ export function CallClientProvider(Private, Promise, es, config) {
             responses.forEach((response, responseIndex) => {
               const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
               const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
-              response.hits.hits.push(a)
-              console.log("-------第二次请求");
+              // response.hits.hits.push(a)
+              console.log("-------第一次请求");
+              // response.hits.hits = [];
+              // response.hits.hits.push(query().a)
               console.log("=========>",response.hits.hits);
               responsesInOriginalRequestOrder[requestIndex] = response;
             });
           });
-      
-          const respond = await respondToSearchRequests(responsesInOriginalRequestOrder);
-          console.log("--------->respond",respond);
+    
+          await respondToSearchRequests(responsesInOriginalRequestOrder);
+          window.localStorage.removeItem("is_first");
         } catch(error) {
           if (errorAllowExplicitIndex.test(error)) {
             return errorAllowExplicitIndex.takeover();
           }
-      
+    
           defer.reject(error);
         }
-          
-          
-        });
+      });
+    } else {
+      window.localStorage.setItem("is_first", true);
+      Promise.resolve().then(async () => {
+        // Execute each request using its search strategy.
+        for (let i = 0; i < searchStrategiesWithRequests.length; i++) {
+          const searchStrategyWithSearchRequests = searchStrategiesWithRequests[i];
+          const { searchStrategy, searchRequests } = searchStrategyWithSearchRequests;
+          const {
+            searching,
+            abort,
+            failedSearchRequests,
+          } = await searchStrategy.search({ searchRequests, es, Promise, serializeFetchParams, includeFrozen, maxConcurrentShardRequests });
     
-      } catch(error) {
-        if (errorAllowExplicitIndex.test(error)) {
-          return errorAllowExplicitIndex.takeover();
+          // Collect searchRequests which have successfully been sent.
+          searchRequests.forEach(searchRequest => {
+            if (failedSearchRequests.includes(searchRequest)) {
+              return;
+            }
+    
+            activeSearchRequests.push(searchRequest);
+          });
+    
+          abortableSearches.push({
+            searching,
+            abort,
+            requestsCount: searchRequests.length,
+          });
         }
-
-        defer.reject(error);
-      }
-    });
+    
+        try {
+          // The request was aborted while we were doing the above logic.
+          if (areAllSearchRequestsAborted) {
+            return;
+          }
+    
+          const segregatedResponses = await Promise.all(abortableSearches.map(async ({ searching, requestsCount }) => {
+            return searching.catch((e) => {
+              // Duplicate errors so that they correspond to the original requests.
+              return new Array(requestsCount).fill({ error: e });
+            });
+          }));
+    
+          // Assigning searchRequests to strategies means that the responses come back in a different
+          // order than the original searchRequests. So we'll put them back in order so that we can
+          // use the order to associate each response with the original request.
+          const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
+          console.log(segregatedResponses);
+          segregatedResponses.forEach((responses, strategyIndex) => {
+            responses.forEach((response, responseIndex) => {
+              const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
+              const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
+              responsesInOriginalRequestOrder[requestIndex] = response;
+            });
+          });
+    
+          await respondToSearchRequests(responsesInOriginalRequestOrder);
+        } catch(error) {
+          if (errorAllowExplicitIndex.test(error)) {
+            return errorAllowExplicitIndex.takeover();
+          }
+    
+          defer.reject(error);
+        }
+      });
+    }
 
     // Return the promise which acts as our vehicle for providing search responses to the consumer.
     // However, if there are any errors, notify the searchRequests of them *instead* of bubbling
@@ -301,4 +286,50 @@ export function CallClientProvider(Private, Promise, es, config) {
   }
 
   return callClient;
+}
+
+// hive 日志查询
+function query() {
+  axios.get('http://localhost:8080/v1/sms/add').then(res => {
+    console.log(res);
+  })
+  return axios.post('http://localhost:8080/v1/sms/add', {
+      name: 'aaa',
+      age: 10
+  },{
+      headers: {
+          'Access-Control-Allow-Origin':'*',  //解决cors头问题
+          'Access-Control-Allow-Credentials':'true', //解决session问题
+          'Content-Type': 'application/json;charset=UTF-8' //将表单数据传递转化为form-data类型
+      },
+      withCredentials : true
+  }).then(res => {
+    console.log(res);
+  })
+  // .catch(function (error) {
+  //     alert(error);
+  // });
+
+  // const a = {
+  //   fields:{
+  //     '@timestamp':["2020-10-22T07:07:22.483Z"],
+  //     'process_timestamp':["2020-10-22T07:07:22.566Z"]
+  //   },
+  //   sort:[1603350599484],
+  //   _id:"MpUkT3UBfnllbGBcl033",
+  //   _index:"logstash-itservice-010-it-service-gateway-2020.10.22",
+  //   _score: null,
+  //   _source:{
+  //     '@timestamp': "2020-10-22T07:09:59.483Z",
+  //     'project': "itservice-010"
+  //   },
+  //   _type:"_doc",
+  //   _version:1
+  // };
+  // const data = {
+  //   a: a,
+  //   b: 100
+  // }
+
+  // return data
 }

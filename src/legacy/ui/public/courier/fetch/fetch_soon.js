@@ -57,6 +57,10 @@ export function FetchSoonProvider(Private, Promise) {
    * logic based on this state change. Individual errors are routed to their respective requests.
    */
   this.fetchQueued = () => {
+    const isQuery = window.localStorage.getItem("is_query");
+    setTimeout(() => {
+      this.fetchSearchRequests(searchRequestQueue.getStartable());
+    },5000);
     return this.fetchSearchRequests(searchRequestQueue.getStartable());
   };
 }
