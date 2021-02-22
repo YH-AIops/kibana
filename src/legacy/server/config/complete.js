@@ -61,6 +61,7 @@ async function getUnusedConfigKeys(
   // console.log(inputKeys);
   // 添加SkyWalking跳转地址
   appliedKeys.push('skyWalking_path');
+  appliedKeys.push('hive_path');
   // 系统所注册的参数
   // console.log(appliedKeys);
 

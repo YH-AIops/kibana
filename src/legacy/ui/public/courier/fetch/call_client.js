@@ -133,10 +133,6 @@ export function CallClientProvider(Private, Promise, es, config) {
     });
 
     const searchStrategiesWithRequests = assignSearchRequestsToSearchStrategies(requestsToFetch);
-    const isQuery = window.localStorage.getItem("is_query");
-    const isFirst = window.localStorage.getItem("is_first");
-    if (isQuery && isFirst) {
-      query();
       Promise.resolve().then(async () => {
         // Execute each request using its search strategy.
         for (let i = 0; i < searchStrategiesWithRequests.length; i++) {
@@ -181,77 +177,6 @@ export function CallClientProvider(Private, Promise, es, config) {
           // order than the original searchRequests. So we'll put them back in order so that we can
           // use the order to associate each response with the original request.
           const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
-          console.log(segregatedResponses);
-          segregatedResponses.forEach((responses, strategyIndex) => {
-            responses.forEach((response, responseIndex) => {
-              const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
-              const requestIndex = searchRequestsAndStatuses.indexOf(searchRequest);
-              // response.hits.hits.push(a)
-              console.log("-------第一次请求");
-              // response.hits.hits = [];
-              // response.hits.hits.push(query().a)
-              console.log("=========>",response.hits.hits);
-              responsesInOriginalRequestOrder[requestIndex] = response;
-            });
-          });
-    
-          await respondToSearchRequests(responsesInOriginalRequestOrder);
-          window.localStorage.removeItem("is_first");
-        } catch(error) {
-          if (errorAllowExplicitIndex.test(error)) {
-            return errorAllowExplicitIndex.takeover();
-          }
-    
-          defer.reject(error);
-        }
-      });
-    } else {
-      window.localStorage.setItem("is_first", true);
-      Promise.resolve().then(async () => {
-        // Execute each request using its search strategy.
-        for (let i = 0; i < searchStrategiesWithRequests.length; i++) {
-          const searchStrategyWithSearchRequests = searchStrategiesWithRequests[i];
-          const { searchStrategy, searchRequests } = searchStrategyWithSearchRequests;
-          const {
-            searching,
-            abort,
-            failedSearchRequests,
-          } = await searchStrategy.search({ searchRequests, es, Promise, serializeFetchParams, includeFrozen, maxConcurrentShardRequests });
-    
-          // Collect searchRequests which have successfully been sent.
-          searchRequests.forEach(searchRequest => {
-            if (failedSearchRequests.includes(searchRequest)) {
-              return;
-            }
-    
-            activeSearchRequests.push(searchRequest);
-          });
-    
-          abortableSearches.push({
-            searching,
-            abort,
-            requestsCount: searchRequests.length,
-          });
-        }
-    
-        try {
-          // The request was aborted while we were doing the above logic.
-          if (areAllSearchRequestsAborted) {
-            return;
-          }
-    
-          const segregatedResponses = await Promise.all(abortableSearches.map(async ({ searching, requestsCount }) => {
-            return searching.catch((e) => {
-              // Duplicate errors so that they correspond to the original requests.
-              return new Array(requestsCount).fill({ error: e });
-            });
-          }));
-    
-          // Assigning searchRequests to strategies means that the responses come back in a different
-          // order than the original searchRequests. So we'll put them back in order so that we can
-          // use the order to associate each response with the original request.
-          const responsesInOriginalRequestOrder = new Array(searchRequestsAndStatuses.length);
-          console.log(segregatedResponses);
           segregatedResponses.forEach((responses, strategyIndex) => {
             responses.forEach((response, responseIndex) => {
               const searchRequest = searchStrategiesWithRequests[strategyIndex].searchRequests[responseIndex];
@@ -269,8 +194,6 @@ export function CallClientProvider(Private, Promise, es, config) {
           defer.reject(error);
         }
       });
-    }
-
     // Return the promise which acts as our vehicle for providing search responses to the consumer.
     // However, if there are any errors, notify the searchRequests of them *instead* of bubbling
     // them up to the consumer.
@@ -288,48 +211,22 @@ export function CallClientProvider(Private, Promise, es, config) {
   return callClient;
 }
 
+const data = "{\"index\":\"logstash-*xszt-001-yh-sod-risk-control-20200812,logstash-*xszt-001-yh-sod-risk-control-20200813\",\"ignore_unavailable\":true,\"preference\":1598495119347}\n" +
+    "{\"version\":true,\"size\":500,\"sort\":[{\"@timestamp\":{\"order\":\"desc\",\"unmapped_type\":\"boolean\"}}],\"_source\":{\"excludes\":[]},\"aggs\":{\"2\":{\"date_histogram\":{\"field\":\"@timestamp\",\"interval\":\"3h\",\"time_zone\":\"Asia/Shanghai\",\"min_doc_count\":1}}},\"stored_fields\":[\"*\"],\"script_fields\":{},\"docvalue_fields\":[{\"field\":\"@timestamp\",\"format\":\"date_time\"}],\"query\":{\"bool\":{\"must\":[{\"range\":{\"@timestamp\":{\"format\":\"strict_date_optional_time\",\"gte\":\"2020-08-12T00:00:00.000Z\",\"lte\":\"2020-08-12T23:59:59.999Z\"}}}],\"filter\":[{\"match_all\":{}}],\"should\":[],\"must_not\":[]}},\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"fragment_size\":2147483647},\"timeout\":\"30000ms\"}\n"
+// const data = `${JSON.stringify({
+//   a:1
+// })}
+// ${JSON.stringify({
+//   b:2
+// })}`
 // hive 日志查询
 function query() {
-  axios.get('http://localhost:8080/v1/sms/add').then(res => {
-    console.log(res);
+  return axios({
+    method: 'post',
+    url: 'http://yhmonitor-test.kibana-query-proxy.sitgw.yonghui.cn/v1/hive',
+    headers: {
+        'Content-type': 'application/json'
+    },
+    data: data
   })
-  return axios.post('http://localhost:8080/v1/sms/add', {
-      name: 'aaa',
-      age: 10
-  },{
-      headers: {
-          'Access-Control-Allow-Origin':'*',  //解决cors头问题
-          'Access-Control-Allow-Credentials':'true', //解决session问题
-          'Content-Type': 'application/json;charset=UTF-8' //将表单数据传递转化为form-data类型
-      },
-      withCredentials : true
-  }).then(res => {
-    console.log(res);
-  })
-  // .catch(function (error) {
-  //     alert(error);
-  // });
-
-  // const a = {
-  //   fields:{
-  //     '@timestamp':["2020-10-22T07:07:22.483Z"],
-  //     'process_timestamp':["2020-10-22T07:07:22.566Z"]
-  //   },
-  //   sort:[1603350599484],
-  //   _id:"MpUkT3UBfnllbGBcl033",
-  //   _index:"logstash-itservice-010-it-service-gateway-2020.10.22",
-  //   _score: null,
-  //   _source:{
-  //     '@timestamp': "2020-10-22T07:09:59.483Z",
-  //     'project': "itservice-010"
-  //   },
-  //   _type:"_doc",
-  //   _version:1
-  // };
-  // const data = {
-  //   a: a,
-  //   b: 100
-  // }
-
-  // return data
 }

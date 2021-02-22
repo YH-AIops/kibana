@@ -21,7 +21,10 @@ import { addSearchStrategy } from './search_strategy_registry';
 import { isDefaultTypeIndexPattern } from './is_default_type_index_pattern';
 import { SearchError } from './search_error';
 import buildBody from './build_body';
+import axios from 'axios';
 
+let isQuery = false;
+let isMerge = false;
 function getAllFetchParams(searchRequests, Promise) {
   return Promise.map(searchRequests, (searchRequest) => {
     return Promise.try(searchRequest.getFetchParams, void 0, searchRequest)
@@ -37,15 +40,22 @@ function getAllFetchParams(searchRequests, Promise) {
 // todo 判定是否再次请求
 function decide(fetchParams) {
   const hostName = document.location.hostname;
-  console.log(hostName);
-  if (hostName.indexOf('kibana-prod') !== -1 || hostName.indexOf('localhost') !== -1) {
-    const info = JSON.stringify(fetchParams.filters[0].range);
+  console.log("hostName:" + hostName);
+  if (fetchParams.filters && (hostName.indexOf('kibana-prod') !== -1 || hostName.indexOf('localhost') !== -1)) {
+    const info = JSON.stringify(fetchParams.filters[fetchParams.filters.length - 1].range);
     const data = JSON.parse(info.substring(14,info.length - 1));
     const lte = new Date(data.lte).getTime();
     const gte = new Date(data.gte).getTime();
-    const day = parseInt((lte - gte) / 1000 / (24 * 60 * 60));
-    day <= 30 ? window.localStorage.setItem("is_query", true)
-    : window.localStorage.removeItem("is_query");
+    const now = new Date().getTime();
+    const fromDay = parseInt((now - gte) / 1000 / (24 * 60 * 60));
+    const toDay = parseInt((now - lte) / 1000 / (24 * 60 * 60));
+    
+    if(fromDay > 30 ) {
+      isQuery = true
+      toDay > 30 ? isMerge = false : isMerge = true
+    } else {
+      isQuery = false
+    }
   }
 }
 
@@ -104,48 +114,59 @@ export const defaultSearchStrategy = {
     }
 
     const searching = es.msearch(msearchParams);
-    // searching.then(({ responses }) => {
-    //   console.log("responses");
-    //   const d = responses[0].hits.hits;
-    //   console.log(d);
-    //   const searching1 = es.msearch(msearchParams);
-    //   searching1.then(res =>{
-    //     console.log("res");
-    //     console.log(res);
-    //     console.log(d.push(res.responses[0].hits.hits[0]));
-    //     console.log(d);
-    //   })
-    // });
+
     return {
       // Munge data into shape expected by consumer.
       searching: new Promise((resolve, reject) => {
         // Unwrap the responses object returned by the ES client.
-        searching.then(({ responses }) => {
-          // console.log("==============");
-          // const d = responses[0].hits.hits;
-          // const searching1 = es.msearch(msearchParams);
-          // searching1.then(res =>{
-          //   d.push(res.responses[0].hits.hits[0]);
-          //   resolve(responses);
-          // })
-          // responses[0].hits.hits = d;
-          // console.log(d.length);
-          // console.log(responses[0].hits.hits.length);
-          // responses[0].hits.hits.shift();
-          resolve(responses);
-        }).catch(error => {
-          // Format ES client error as a SearchError.
-          const { statusCode, displayName, message, path } = error;
-
-          const searchError = new SearchError({
-            status: statusCode,
-            title: displayName,
-            message,
-            path,
+        setLoading(true);
+        if (isQuery) {
+          query(serializedFetchParams).then(res => {
+            searching.then(({ responses }) => {
+              if (isMerge && responses[0].aggregations) {
+                res.data.responses[0].aggregations[2].buckets.push(...responses[0].aggregations[2].buckets);
+                res.data.responses[0].hits.hits.push(...responses[0].hits.hits)
+                res.data.responses[0].hits.total = res.data.responses[0].hits.total + responses[0].hits.total
+              }
+              setLoading(false);
+              resolve(res.data.responses);
+            }).catch(error => {
+              // Format ES client error as a SearchError.
+              const { statusCode, displayName, message, path } = error;
+    
+              const searchError = new SearchError({
+                status: statusCode,
+                title: displayName,
+                message,
+                path,
+              });
+    
+              reject(searchError);
+            });
+          }).catch(error => {
+            searching.then(({ responses }) => {
+              resolve(responses);
+            })
+            setLoading(false);
           });
+        } else {
+          searching.then(({ responses }) => {
+            setLoading(false);
+            resolve(responses);
+          }).catch(error => {
+            // Format ES client error as a SearchError.
+            const { statusCode, displayName, message, path } = error;
+  
+            const searchError = new SearchError({
+              status: statusCode,
+              title: displayName,
+              message,
+              path,
+            });
+            reject(searchError);
+          });
+        }
 
-          reject(searchError);
-        });
       }),
       abort: searching.abort,
       failedSearchRequests,
@@ -162,3 +183,30 @@ export const defaultSearchStrategy = {
 };
 
 addSearchStrategy(defaultSearchStrategy);
+
+function setLoading(date) {
+  window.localStorage.setItem("loading", date);
+}
+
+// Hive日志数据查询
+// 打包需更改
+function query(serializedFetchParams) {
+  const data = "{\"index\":\"logstash-*xszt-001-yh-sod-risk-control-20200812,logstash-*xszt-001-yh-sod-risk-control-20200813\",\"ignore_unavailable\":true,\"preference\":1598495119347}\n" +
+    "{\"version\":true,\"size\":500,\"sort\":[{\"@timestamp\":{\"order\":\"desc\",\"unmapped_type\":\"boolean\"}}],\"_source\":{\"excludes\":[]},\"aggs\":{\"2\":{\"date_histogram\":{\"field\":\"@timestamp\",\"interval\":\"3h\",\"time_zone\":\"Asia/Shanghai\",\"min_doc_count\":1}}},\"stored_fields\":[\"*\"],\"script_fields\":{},\"docvalue_fields\":[{\"field\":\"@timestamp\",\"format\":\"date_time\"}],\"query\":{\"bool\":{\"must\":[{\"range\":{\"@timestamp\":{\"format\":\"strict_date_optional_time\",\"gte\":\"2020-08-12T00:00:00.000Z\",\"lte\":\"2020-08-12T23:59:59.999Z\"}}}],\"filter\":[{\"match_all\":{}}],\"should\":[],\"must_not\":[]}},\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"fragment_size\":2147483647},\"timeout\":\"30000ms\"}\n"
+  let hive_path = window.localStorage.getItem("hive_path");
+  // const data = `${JSON.stringify({
+  //   a:1
+  // })}
+  // ${JSON.stringify({
+  //   b:2
+  // })}`
+  hive_path = hive_path ? hive_path :'http://monitor-prod.kibana-query-proxy.gw.yonghui.cn'
+  return axios({
+    method: 'post',
+    url: hive_path + '/v1/hive',
+    headers: {
+        'Content-type': 'application/json'
+    },
+    data: buildBody(serializedFetchParams)
+  });
+} 

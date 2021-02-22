@@ -110,7 +110,24 @@ elasticsearch.password: "Cm7GA80DYZdKo5F1z2KB"
 #ops.interval: 5000
 
 # Specifies locale to be used for all localizable strings, dates and number formats.
-i18n.locale: "en"
-#i18n.locale: "zh-CN"
+#i18n.locale: "en"
+i18n.locale: "zh-CN"
 
-skyWalking_path: "http://devtrace.itwork.yonghui.cn/"
+# 链路 开发地址
+skyWalking_path: "http://swdev-itwork.yonghui.cn"
+
+# 链路 测试地址
+#skyWalking_path: "http://swtest-itwork.yonghui.cn"
+
+# 链路 预生产地址
+#skyWalking_path: "http://uattrace.itwork.yonghui.cn"
+
+# 链路 生产地址
+#skyWalking_path: "http://prdtrace.itwork.yonghui.cn"
+
+# hive日志查询
+# 生产地址
+#hive_path: "http://monitor-prod.kibana-query-proxy.gw.yonghui.cn"
+
+# 测试地址
+hive_path: "http://yhmonitor-test.kibana-query-proxy.sitgw.yonghui.cn"

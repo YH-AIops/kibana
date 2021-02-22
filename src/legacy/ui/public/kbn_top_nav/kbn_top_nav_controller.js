@@ -34,6 +34,7 @@ export function KbnTopNavControllerProvider($compile) {
       this.currentKey = null;
       this.templates = {};
       this.locals = new Map();
+      this.prompt = false;
 
       this.addItems(opts);
     }
@@ -105,6 +106,10 @@ export function KbnTopNavControllerProvider($compile) {
 
     // enable actual rendering
     _link($scope, $element) {
+      const hostName = document.location.hostname;
+      if (hostName.indexOf('kibana-prod') !== -1 || hostName.indexOf('localhost') !== -1) {
+        this.prompt = true
+      }
       this.$scope = $scope;
       this.$element = $element;
       this._render();
