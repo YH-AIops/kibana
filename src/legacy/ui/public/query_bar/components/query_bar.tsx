@@ -343,8 +343,6 @@ export class QueryBarUI extends Component<Props, State> {
   public onClickSubmitButton = (event: React.MouseEvent<HTMLButtonElement>) => {
     // console.log("查询按钮");
     // console.log(event);
-    console.log("-------->state",this.state);
-    
     this.onSubmit(() => event.preventDefault());
   };
 

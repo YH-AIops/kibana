@@ -136,6 +136,7 @@ export function initAuthenticateApi(server) {
       // 所以在此方法一同返回跳转域名
       const yaml = safeLoad(readFileSync('./config/kibana.yml', 'utf8'));
       request.auth.credentials.skyWalking_path = yaml.skyWalking_path;
+      request.auth.credentials.hive_path = yaml.hive_path;
       return request.auth.credentials;
     }
   });
