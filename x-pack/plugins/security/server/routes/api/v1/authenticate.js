@@ -6,6 +6,8 @@
 
 import Boom from 'boom';
 import Joi from 'joi';
+import { readFileSync } from 'fs';
+import { safeLoad } from 'js-yaml';
 import { wrapError } from '../../../lib/errors';
 import { canRedirectRequest } from '../../../lib/can_redirect_request';
 
@@ -130,6 +132,9 @@ export function initAuthenticateApi(server) {
     method: 'GET',
     path: '/api/security/v1/me',
     handler(request) {
+      const yaml = safeLoad(readFileSync('./config/kibana.yml', 'utf8'));
+      request.auth.credentials.skyWalkingPath = yaml.skyWalkingPath;
+      request.auth.credentials.hivePath = yaml.hivePath;
       return request.auth.credentials;
     }
   });

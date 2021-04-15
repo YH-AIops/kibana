@@ -590,7 +590,8 @@ function discoverController(
               current.fetchStatus,
               prev.fetchStatus
             );
-
+            const loading = localStorage.getItem('loading');
+            $scope.resultState = JSON.parse(loading) ? 'loading' : 'ready';
             prev = current;
           };
         }()));

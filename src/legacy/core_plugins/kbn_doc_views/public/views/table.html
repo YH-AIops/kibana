@@ -97,6 +97,7 @@
           tooltip="{{ ::'kbnDocViews.table.objectsInArraysAreNotWellSupportedTooltip' | i18n: { defaultMessage: 'Objects in arrays are not well supported.' } }}"
           class="fa fa-warning text-color-warning kbnDocViewer__objectArray"></i>
         <div class="kbnDocViewer__value" ng-bind-html="typeof(formatted[field]) === 'undefined' ? hit[field] : formatted[field] | trustAsHtml"></div>
+        <a ng-if="showLink(doc, field)" ng-click="openTrace()">链路信息查看</a>
       </td>
     </tr>
   </tbody>

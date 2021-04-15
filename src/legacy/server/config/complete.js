@@ -57,6 +57,11 @@ async function getUnusedConfigKeys(
   const inputKeys = getFlattenedKeys(settings);
   const appliedKeys = getFlattenedKeys(configValues);
 
+  // kibana配置参数和默认参数
+  // 添加SkyWalking跳转地址
+  appliedKeys.push('skyWalkingPath');
+  appliedKeys.push('hivePath');
+
   if (inputKeys.includes('env')) {
     // env is a special case key, see https://github.com/elastic/kibana/blob/848bf17b/src/legacy/server/config/config.js#L74
     // where it is deleted from the settings before being injected into the schema via context and

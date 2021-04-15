@@ -68,6 +68,13 @@ chromeHeaderNavControlsRegistry.register((ShieldUser, kbnBaseUrl, Private) => ({
       logoutUrl: chrome.addBasePath(`/logout`)
     };
 
+    // 获取sw、hive地址
+    props.user.$promise.then(data => {
+      const { skyWalkingPath, hivePath } = data;
+      localStorage.setItem('skyWalkingPath', skyWalkingPath);
+      localStorage.setItem('hivePath', hivePath);
+    });
+
     props.user.$promise.then(() => {
       // Wait for the user to be propogated before rendering into the DOM.
       ReactDOM.render(

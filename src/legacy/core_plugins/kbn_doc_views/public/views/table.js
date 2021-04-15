@@ -68,6 +68,42 @@ DocViewsRegistryProvider.register(function () {
           const value = $scope.flattened[field];
           return Array.isArray(value) && typeof value[0] === 'object';
         };
+
+        $scope.showLink = function (row, field) {
+          const str = /^(\d+\.)+\d+$/;
+          return field === 'traceId' ? str.test(getTraceId()) : false;
+        };
+
+        // 跳转到SkyWalkinng追踪页面
+        $scope.openTrace = function () {
+          const date = getDate();
+          const project = $scope.hit._source.project;
+          const path = window.localStorage.getItem('skyWalkingPath');
+          const url = path + '/trace?project=' + project + '&traceId=' + getTraceId() +
+            '&start=' + date[0] + '&end=' + date[1];
+          window.open(url, '_blank');
+        };
+
+        function getTraceId() {
+          let traceId = $scope.hit._source.traceId;
+          traceId = traceId.substr(4, traceId.length);
+          return traceId;
+        }
+
+        function getDate() {
+          //2020 11 02 16 51 55 741
+          const date = $scope.hit._source.date;
+          const year = date.substr(0, 4);
+          const month = parseInt(date.substr(4, 2)) - 1;
+          const day = date.substr(6, 2);
+          const hour = date.substr(8, 2);
+          const startMinute = parseInt(date.substr(10, 2)) - 30;
+          const endMinute = parseInt(date.substr(10, 2)) + 30;
+          const second = date.substr(12, 2);
+          const ms = date.substr(14, 3);
+          return [new Date(year, month, day, hour, startMinute, second, ms).toISOString(),
+            new Date(year, month, day, hour, endMinute, second, ms).toISOString()];
+        }
       }
     }
   };

@@ -111,3 +111,27 @@
 
 # Specifies locale to be used for all localizable strings, dates and number formats.
 #i18n.locale: "en"
+
+elasticsearch.hosts: ["http://10.0.56.239:9200"]
+elasticsearch.username: "elastic"
+elasticsearch.password: "oGZBHJGYhpnCdxkhG6tJ"
+
+i18n.locale: 'zh-CN'
+
+# 链路 开发地址
+#skyWalkingPath: 'http://swdev-itwork.yonghui.cn'
+
+# 链路 测试地址
+#skyWalkingPath: "http://swtest-itwork.yonghui.cn"
+
+# 链路 预生产地址
+#skyWalkingPath: "http://uattrace.itwork.yonghui.cn"
+
+# 链路 生产地址
+skyWalkingPath: "http://prdtrace.itwork.yonghui.cn"
+
+# hive日志查询
+# 生产地址
+hivePath: 'http://monitor-prod.kibana-query-proxy.gw.yonghui.cn'
+# 测试地址
+#hivePath: "http://yhmonitor-test.kibana-query-proxy.sitgw.yonghui.cn"

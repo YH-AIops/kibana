@@ -20,11 +20,24 @@
 import { addSearchStrategy } from './search_strategy_registry';
 import { isDefaultTypeIndexPattern } from './is_default_type_index_pattern';
 import { SearchError } from './search_error';
+import buildBody from './build_body';
+import searchHive from './search_hive';
+
+let isQuery = false;
+let isMerge = false;
+
 
 function getAllFetchParams(searchRequests, Promise) {
   return Promise.map(searchRequests, (searchRequest) => {
     return Promise.try(searchRequest.getFetchParams, void 0, searchRequest)
       .then((fetchParams) => {
+        const href = document.location.href;
+        if (href.includes('discover')) {
+          decide(fetchParams);
+        } else {
+          isQuery = false;
+          isMerge = false;
+        }
         return (searchRequest.fetchParams = fetchParams);
       })
       .then(value => ({ resolved: value }))
@@ -78,7 +91,7 @@ export const defaultSearchStrategy = {
       rest_total_hits_as_int: true,
       // If we want to include frozen indexes we need to specify ignore_throttled: false
       ignore_throttled: !includeFrozen,
-      body: serializedFetchParams,
+      body: buildBody(serializedFetchParams),
     };
 
     if (maxConcurrentShardRequests !== 0) {
@@ -90,22 +103,28 @@ export const defaultSearchStrategy = {
     return {
       // Munge data into shape expected by consumer.
       searching: new Promise((resolve, reject) => {
-        // Unwrap the responses object returned by the ES client.
-        searching.then(({ responses }) => {
-          resolve(responses);
-        }).catch(error => {
-          // Format ES client error as a SearchError.
-          const { statusCode, displayName, message, path } = error;
+        localStorage.setItem('loading', true);
+        if (isQuery) {
+          searchHive(serializedFetchParams, isMerge, searching, resolve, reject);
+        } else {
+          // Unwrap the responses object returned by the ES client.
+          searching.then(({ responses }) => {
+            localStorage.setItem('loading', false);
+            resolve(responses);
+          }).catch(error => {
+            // Format ES client error as a SearchError.
+            const { statusCode, displayName, message, path } = error;
 
-          const searchError = new SearchError({
-            status: statusCode,
-            title: displayName,
-            message,
-            path,
+            const searchError = new SearchError({
+              status: statusCode,
+              title: displayName,
+              message,
+              path,
+            });
+
+            reject(searchError);
           });
-
-          reject(searchError);
-        });
+        }
       }),
       abort: searching.abort,
       failedSearchRequests,
@@ -120,5 +139,27 @@ export const defaultSearchStrategy = {
     return isDefaultTypeIndexPattern(indexPattern);
   },
 };
+
+// 判定是否再次请求
+function decide(fetchParams) {
+  const hostName = document.location.hostname;
+  // console.log("hostName:" + hostName);
+  if (fetchParams.filters && (hostName.indexOf('kibana-prod') !== -1 || hostName.indexOf('localhost') !== -1)) {
+    const info = JSON.stringify(fetchParams.filters[fetchParams.filters.length - 1].range);
+    const data = JSON.parse(info.substring(14, info.length - 1));
+    const lte = new Date(data.lte).getTime();
+    const gte = new Date(data.gte).getTime();
+    const now = new Date().getTime();
+    const fromDay = parseInt((now - gte) / 1000 / (24 * 60 * 60));
+    const toDay = parseInt((now - lte) / 1000 / (24 * 60 * 60));
+
+    if (fromDay > 30) {
+      isQuery = true;
+      isMerge = toDay > 30 ? false : true;
+    } else {
+      isQuery = false;
+    }
+  }
+}
 
 addSearchStrategy(defaultSearchStrategy);
